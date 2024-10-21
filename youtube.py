@@ -60,4 +60,14 @@ class SearchResult:
         for mapping in self.vChIdMappings:
             pprint.pp(mapping)
 
+    def toDict(self):
+
+        d = {
+            'prevPageToken': self.prevPageToken,
+            'nextPageToken': self.nextPageToken,
+            'regionCode': self.regionCode,
+            'vChIdMappings': self.vChIdMappings,
+        }
+
+        return d
 

@@ -41,6 +41,7 @@ def main():
         video_data = video_api.list(params)
         video_res.append(video_data)
 
+    output_json(sr.toDict(), 'result_search_valorant.json')
     output_json(video_res, 'result_valorant_shorts.json')
 
 
