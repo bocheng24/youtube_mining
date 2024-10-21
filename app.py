@@ -21,7 +21,10 @@ def load_params(endpoint, json_file, **kwargs):
 
     return data
 
-
+def output_json(data, file_name):
+    base = 'data'
+    with open(path.join(base, file_name), 'w') as output:
+        json.dump(data, output, indent=2)
 
 def main():
     search_api = YoutubeAPI('search', API_KEY)
@@ -29,12 +32,16 @@ def main():
 
     sr = SearchResult(search_data)
 
+    video_res = []
+
     for mapping in sr.vChIdMappings:
         video_api = YoutubeAPI('videos', API_KEY)
         params = load_params('videos', 'param.json', id = mapping['videoId'])
 
         video_data = video_api.list(params)
-        pprint.pp(video_data)
+        video_res.append(video_data)
+
+    output_json(video_res, 'result_valorant_shorts.json')
 
 
 
