@@ -23,7 +23,7 @@ def main():
 
     try:
         while quota < limit:
-            dt_postfix = datetime.now().strftime('%m%d%Y%H:%M:%S')
+            dt_postfix = datetime.now().strftime('%m%d%Y%H%M%S')
 
             outputnames = {
                 'search': f'valorant_searchdata_{dt_postfix}.json',
