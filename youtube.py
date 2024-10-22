@@ -1,5 +1,7 @@
 import requests
 import pprint
+from datetime import datetime
+import os
 
 class YoutubeAPI:
 
@@ -10,27 +12,33 @@ class YoutubeAPI:
         'videos': '/videos'
     }
 
-    def __init__(self, endpoint, api_key, method = 'GET'):
+    def __init__(self, endpoint, api_key, params):
         self.endpoint = self.endpoints[endpoint]
         self.api_key = api_key
+        self.params = params
 
     @property
-    def url(self):
-        return f'{self.base_url}{self.endpoint}?key={self.api_key}'
+    def params(self):
+        return self._params
 
-    def list(self, params: dict) -> None:
-        params_flat = [self.url]
-
-        for k, v in params.items():
+    @params.setter
+    def params(self, json_value):
+        params_flat = []
+        for k, v in json_value.items():
             if isinstance(v, list):
                 v = ','.join(v)
 
             params_flat.append(f'{k}={v}')
 
-        full_url = '&'.join(params_flat)
+        self._params = '&'.join(params_flat)
 
-        print(f'Request data following url:\n{full_url}')
-        res = requests.get(full_url)
+    @property
+    def url(self):
+        return f'{self.base_url}{self.endpoint}?key={self.api_key}&{self.params}'
+
+    def list(self):
+        print(f'Request data following url:\n{self.url}')
+        res = requests.get(self.url)
 
         if res.status_code == 200:
             return res.json()
@@ -43,6 +51,7 @@ class SearchResult:
         self.prevPageToken = result.get('prevPageToken', None)
         self.nextPageToken = result.get('nextPageToken', None)
         self.regionCode = result.get('regionCode', None)
+        self.loadDatetime = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
 
         # a list of video Id, channel id mapping
         self.vChIdMappings = [
@@ -71,3 +80,12 @@ class SearchResult:
 
         return d
 
+    def nextPageParams(self, params):
+        if self.nextPageToken:
+            params['pageToken'] = self.nextPageToken
+            return params
+
+        return None
+
+    def saveResult(self):
+        result = self.toDict()
