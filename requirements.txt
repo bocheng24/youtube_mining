@@ -1,3 +1,11 @@
 requests
 python-dotenv
 pydantic
+jupyter
+numpy
+pandas
+scipy
+matplotlib
+seaborn
+scikit-learn
+tqdm

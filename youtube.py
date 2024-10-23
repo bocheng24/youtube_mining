@@ -9,7 +9,8 @@ class YoutubeAPI:
 
     endpoints = {
         'search': '/search',
-        'videos': '/videos'
+        'videos': '/videos',
+        'channels': '/channels',
     }
 
     def __init__(self, endpoint, api_key, params):
