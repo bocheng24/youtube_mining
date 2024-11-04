@@ -1,73 +1,58 @@
-from youtube import YoutubeAPI, SearchResult
-
-import pprint
+# import pprint
 from os import environ
 from dotenv import load_dotenv
-from utils import *
-from datetime import datetime
 from sys import exit
 from time import sleep, perf_counter
+from api.client import *
+import colorama
+from colorama import Fore, Style
 
 
 load_dotenv()
 API_KEY = environ['API_KEY']
 
-
 def main():
-    limit = input('Enter quota limitation for this run:\n')
 
-    quota = 0
-    limit = int(limit)
+    # colorama.init(autoreset=True)
 
-    start = perf_counter()
 
-    try:
-        max_try = 0
+    limit_quota = int(input(f'{Fore.BLUE}{Style.BRIGHT}Enter how many quota do you want to consume youtube API:\n{Fore.RESET}{Style.RESET_ALL}'))
 
-        while quota < limit or max_try == 3:
-            niche = 'valorant'
-            dt_postfix = datetime.now().strftime('%m%d%Y%H%M%S')
+    api_client = Client(API_KEY, limit_quota)
 
-            outputnames = {
-                'search': f'{niche}_searchdata_{dt_postfix}.json',
-                'videos': f'{niche}_videodata_{dt_postfix}.json',
-                'channels': f'{niche}_channeldata_{dt_postfix}.json',
-            }
+    choices = {
+        1: api_client.search_wflow,
+        2: api_client.channels_wflow,
+        3: api_client.playlistitems_wflow,
+        4: api_client.videos_wflow
+    }
 
-            search_params = load_params('search')
-            search_api = YoutubeAPI('search', API_KEY, search_params)
-            search_data = search_api.list()
+    ui = {
+        '1': 'Full search workflow: search -> get all channels -> get all video ids -> get all videos details',
+        '2': 'Channels workflow: get all channels -> get all video ids -> get all videos details',
+        '3': 'Video IDs workflow: get all video ids -> get all videos details',
+        '4': 'Videos details workflow: get all videos details',
+    }
 
-            sr = SearchResult(search_data)
+    choice = ''
 
-            if sr.nextPageToken:
-                next_page_params = sr.nextPageParams(search_params)
-                quota += 1
+    while not choice:
+        print(f'{Fore.BLUE}{Style.BRIGHT}Choose 1 of the following options:\n')
 
-                quota, video_res = consume(sr.vChIdMappings, API_KEY, 'videos', quota)
-                quota, channel_res = consume(sr.vChIdMappings, API_KEY, 'channels', quota)
+        for k, v in ui.items():
+            message = f'{k}: {v}'
+            print(message)
 
-                output_json(next_page_params, param_type = 'search', base_folder = 'paramsConfigs/search')
-                output_json(sr.toDict(), outputnames['search'])
-                output_json(video_res, outputnames['videos'])
-                output_json(channel_res, outputnames['channels'])
+        choice = input(f'Type 1, 2, 3, 4: {Style.RESET_ALL}')
 
-            else:
-                print('Cannot find next page token, program will try again after 2 seconds')
-                sleep(2)
-                max_try += 1
+        if choice not in ui.keys():
+            choice = ''
 
-    finally:
-        end = perf_counter()
-        cost_time = end - start
+    choice = int(choice)
 
-        cost_hr = cost_time // 3600
-        cost_min = (cost_time - cost_hr * 3600) // 60
-        cost_sec = (cost_time - cost_hr * 3600) % 60
+    func = choices[choice]
+    func()
 
-        cost_str = f'{cost_hr} hr {cost_min} min {cost_sec} sec'
-        print(f'Cost total {cost_str} ')
-        print(f'Total quota costs: {quota}\n')
 
 if __name__ == '__main__':
     main()

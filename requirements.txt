@@ -1,7 +1,7 @@
 requests
 python-dotenv
 pydantic
-jupyter
+jupyter==1.0.0
 numpy
 pandas
 scipy
@@ -9,3 +9,5 @@ matplotlib
 seaborn
 scikit-learn
 tqdm
+sqlalchemy
+colorama
