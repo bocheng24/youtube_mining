@@ -26,14 +26,6 @@ class SearchData:
         self.loadDatetime = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
         self.channelIds = set([item['snippet']['channelId'] for item in result['items']])
 
-        # a list of video Id, channel id mapping
-        # self.vChIdMappings = [
-        #     {
-        #         'videoId': item['id']['videoId'],
-        #         'channelId': item['snippet']['channelId']
-        #     } for item in result['items']
-        # ]
-
 
     def has_next_page(self):
         return self.nextPageToken != None
@@ -73,28 +65,49 @@ class SearchData:
 
 class ChannelData:
     def __init__(self, result):
-        snippet = result['snippet']
-        contentDetails = result['contentDetails']
+        item = result['items'][0]
+        snippet = item['snippet']
+        contentDetails = item['contentDetails']
+        statistics = item['statistics']
 
-        self.id = result['id']
+        self.id = item['id']
         self.title = snippet['title']
         self.description = snippet['description']
         self.customUrl = snippet['customUrl']
         self.publishedAt = datetime.strptime(snippet['publishedAt'].split('T')[0], '%Y-%m-%d')
-        self.uploads = contentDetails['uploads']
+        self.uploads = contentDetails['relatedPlaylists']['uploads']
+        self.viewCount = statistics['viewCount']
+        self.subscriberCount = statistics['subscriberCount']
+        self.videoCount = statistics['videoCount']
+
+    def has_next_page(self):
+        return False
 
     def saveData(self):
 
         exists_channel = session.query(Channel).filter_by(id = self.id).first()
 
         if exists_channel is None:
-            new_model = Channel(self.id, self.title, self.description, self.customUrl, self.publishedAt, self.uploads)
+            new_model = Channel(
+                id = self.id,
+                title = self.title,
+                description = self.description,
+                customUrl = self.customUrl,
+                publishedAt = self.publishedAt,
+                uploads = self.uploads,
+                viewCount = self.viewCount,
+                subscriberCount = self.subscriberCount,
+                videoCount = self.videoCount,
+            )
 
             session.add(new_model)
             session.commit()
 
+            return True
+
         else:
             print(f'Channel ID: {self.id} has been found in db')
+            return False
 
 
 
@@ -102,7 +115,36 @@ class PlaylistItemsData:
 
     def __init__(self, result):
 
-        self.channel_id = result['snippet']
+        self.nextPageToken = result.get('nextPageToken', None)
+        self.items = result['items']
+
+    def has_next_page(self):
+        return self.nextPageToken != None
+
+    def saveData(self):
+        all_new_models = []
+
+        for item in self.items:
+            snippet = item['snippet']
+
+            pli_model = PlaylistItems(
+                playlistId = snippet['playlistId'],
+                videoId = snippet['resourceId']['videoId']
+            )
+
+            exists_video = session.query(PlaylistItems).filter_by(videoId = pli_model.videoId).first()
+
+            if exists_video is None:
+
+                all_new_models.append(pli_model)
+        print(all_new_models)
+        if len(all_new_models) > 0:
+            session.add_all(all_new_models)
+            session.commit()
+            print(f'{len(all_new_models)} new Playlist items results saved to db')
+
+        # return True
+
 
 
 class VideoData:

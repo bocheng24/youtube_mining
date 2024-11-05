@@ -22,16 +22,20 @@ def main():
 
     choices = {
         1: api_client.search_wflow,
-        2: api_client.channels_wflow,
-        3: api_client.playlistitems_wflow,
-        4: api_client.videos_wflow
+        2: api_client.search_query,
+        3: api_client.channel_query,
+        4: api_client.playlistitems_query,
+        5: api_client.search_query,
+        6: api_client.channel_query,
     }
 
     ui = {
         '1': 'Full search workflow: search -> get all channels -> get all video ids -> get all videos details',
-        '2': 'Channels workflow: get all channels -> get all video ids -> get all videos details',
-        '3': 'Video IDs workflow: get all video ids -> get all videos details',
-        '4': 'Videos details workflow: get all videos details',
+        '2': 'Search Only',
+        '3': 'Query Channel Details only',
+        '4': 'Query Playlist items only',
+        '5': 'Search Only',
+        '6': 'Query Channel Details only'
     }
 
     choice = ''
@@ -43,7 +47,7 @@ def main():
             message = f'{k}: {v}'
             print(message)
 
-        choice = input(f'Type 1, 2, 3, 4: {Style.RESET_ALL}')
+        choice = input(f'Type {', '.join(ui.keys())}: {Style.RESET_ALL}')
 
         if choice not in ui.keys():
             choice = ''
@@ -52,6 +56,7 @@ def main():
 
     func = choices[choice]
     func()
+    print(f'{Fore.CYAN}quota used: {api_client.quota}')
 
 
 if __name__ == '__main__':

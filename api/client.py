@@ -24,12 +24,12 @@ class APIStarter:
 
         return file_path
 
-    def load_params(self):
+    def load_params(self, **kwargs):
         with open(self.param_file_path, 'r') as js:
             param_data = json.load(js)
 
-        if 'pageToken' in param_data.key() and param_data['pageToken'] is None:
-            self.has_next_page = False
+        if 'pageToken' in param_data.keys() and param_data['pageToken'] is None:
+            del param_data['pageToken']
 
         return param_data
 
@@ -43,7 +43,7 @@ class APIStarter:
         json_data = yt.list()
 
         new_data = self.DataClass(json_data)
-        data.append(new_data)
+        # data.append(new_data)
 
         self.has_next_page = new_data.has_next_page()
 
@@ -54,9 +54,9 @@ class APIStarter:
         elif not self.has_next_page and 'pageToken' in self.params.keys():
             self.params['pageToken'] = None
 
-        self.save_params(new_params)
+        self.save_params(self.params)
 
-        return data
+        return new_data
 
     def consume(self):
         all_data = []
@@ -94,21 +94,17 @@ class ChannelAPI(APIStarter):
 
 
 class PlaylistItemsAPI(APIStarter):
-    endpoint = '/playlistitems'
+    endpoint = '/playlistItems'
     param_folder = 'listitems'
-    DataClass = PlaylistItems
+    DataClass = PlaylistItemsData
     has_next_page = True
-    message = 'All uploads have been fetched'
+    message = 'All playlist uploads have been fetched'
 
-    def __init__(self, api_key, chnl_id):
+    def __init__(self, api_key, playlistId):
         super().__init__(api_key)
-        self.chnl_id = chnl_id
+        self.playlistId = playlistId
+        self.params = {**self.load_params(), 'playlistId': playlistId}
 
-    def load_params(self):
-        param_data = super().load_params()
-        param_data = {**param_data, 'id': self.chnl_id}
-
-        return param_data
 
 
 class VideoAPI(APIStarter):
@@ -118,20 +114,14 @@ class VideoAPI(APIStarter):
 
     def __init__(self, api_key, video_id):
         super().__init__(api_key)
-        self.video_id = video_id
-
-    def load_params(self):
-        param_data = super().load_params()
-        param_data = {**param_data, 'id': self.video_id}
-
-        return param_data
+        self.video_id = {**self.load_params(), 'id': video_id}
 
 
 @dataclass
 class Client:
 
     api_key: str
-    limit_quota: int
+    limit_quota: int = 100
     quota: int = 0
 
     def cal_quota(self, *results, typ = 'list'):
@@ -144,7 +134,13 @@ class Client:
         self.quota += used_quota
 
     def search_wflow(self):
-        print('Search workflow')
+        running = True
+
+        while running:
+            self.search_query()
+            self.channel_query()
+
+            running = self.quota < self.limit_quota
 
     def channels_wflow(self):
         print('Channel workflow')
@@ -154,6 +150,58 @@ class Client:
 
     def videos_wflow(self):
         print('Videos workflow')
+
+    def search_query(self):
+
+        exists_search = session.query(Search).filter_by(status = 'N').first()
+
+        if exists_search is None:
+            search_api = SearchAPI(self.api_key)
+
+            search_data = search_api.fetch()
+            self.cal_quota()
+            search_data.saveData()
+            print('quota', self.quota)
+
+    def channel_query(self):
+
+        new_channel = session.query(Search).filter_by(status = 'N').first()
+
+        while new_channel:
+            chnl_api = ChannelAPI(self.api_key, new_channel.channel_id)
+            chnl_data = chnl_api.fetch()
+            self.cal_quota(chnl_data)
+
+            saved = chnl_data.saveData()
+
+            if saved:
+                new_channel.status = 'Y'
+                session.commit()
+
+                new_channel = session.query(Search).filter_by(status = 'N').first()
+
+            else:
+                print('Something with saving the new channel')
+
+    def playlistitems_query(self):
+        new_upload = session.query(Channel).filter_by(status = 'N').first()
+        print(new_upload.uploads)
+
+        # while new_upload:
+        pli_api = PlaylistItemsAPI(self.api_key, new_upload.uploads)
+        pli_data = pli_api.consume()
+        self.cal_quota(pli_data)
+
+        for pli in pli_data:
+            pli.saveData()
+
+        new_upload.status = 'Y'
+        session.commit()
+
+
+
+
+
 
 
 
