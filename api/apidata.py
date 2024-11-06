@@ -2,6 +2,7 @@ import pprint
 from datetime import datetime
 from schemas.models import *
 from sqlalchemy.orm import sessionmaker
+import isodate
 
 Session = sessionmaker(bind = engine)
 session = Session()
@@ -72,7 +73,7 @@ class ChannelData:
 
         self.id = item['id']
         self.title = snippet['title']
-        self.description = snippet['description']
+        self.description = snippet['description'].replace('\n', '')
         self.customUrl = snippet['customUrl']
         self.publishedAt = datetime.strptime(snippet['publishedAt'].split('T')[0], '%Y-%m-%d')
         self.uploads = contentDetails['relatedPlaylists']['uploads']
@@ -148,4 +149,68 @@ class PlaylistItemsData:
 
 
 class VideoData:
-    ...
+    def __init__(self, result):
+        item = result['items'][0]
+
+        snippet = item['snippet']
+        statistics = item['statistics']
+        contentDetails = item['contentDetails']
+        topicDetails = item.get('topicDetails', {'topicCategories': ['']})
+
+        self.id = item['id']
+        self.channelId = snippet['channelId']
+        self.title = snippet['title']
+        self.description = snippet['description'].replace('\n', '')
+        self.tags = snippet.get('tags', [''])
+        self.thumbnail = snippet['thumbnails']['default']['url']
+        self.publishedAt = datetime.strptime(snippet['publishedAt'].split('T')[0], '%Y-%m-%d')
+        self.categoryId = snippet['categoryId']
+        self.defaultLanguage = snippet.get('defaultLanguage', '')
+        self.duration = isodate.parse_duration(contentDetails['duration']).total_seconds()
+        self.viewCount = statistics.get('viewCount', 0)
+        self.likeCount = statistics.get('likeCount', 0)
+        self.commentCount = statistics.get('commentCount', 0)
+        self.topicCategories = topicDetails.get('topicCategories', [''])
+
+    def has_next_page(self):
+        return False
+
+    def saveData(self):
+
+        exists_video = session.query(Video).filter_by(id = self.id).first()
+
+        if exists_video is None:
+            new_video = Video(
+                id = self.id,
+                channelId = self.channelId,
+                title = self.title,
+                description = self.description,
+                thumbnail = self.thumbnail,
+                publishedAt = self.publishedAt,
+                categoryId = self.categoryId,
+                defaultLanguage =self.defaultLanguage,
+                duration =self.duration,
+                viewCount = self.viewCount,
+                likeCount = self.likeCount,
+                commentCount = self.commentCount,
+            )
+            tag_models = [
+                VideoTags(video_id = self.id, tag = tag)
+                for tag in self.tags
+            ]
+
+            detail_models = [
+                VideoDetail(video_id = self.id, detail_category = detail)
+                for detail in self.topicCategories
+            ]
+
+            new_models = [new_video, *tag_models, *detail_models]
+
+            session.add_all(new_models)
+            session.commit()
+
+            return True
+
+        else:
+            print(f'Channel ID: {self.id} has been found in db')
+            return False

@@ -4,6 +4,8 @@ import os
 import json
 from api.apidata import *
 from dataclasses import dataclass
+from colorama import Fore
+from time import sleep
 
 class APIStarter:
 
@@ -114,7 +116,7 @@ class VideoAPI(APIStarter):
 
     def __init__(self, api_key, video_id):
         super().__init__(api_key)
-        self.video_id = {**self.load_params(), 'id': video_id}
+        self.params = {**self.load_params(), 'id': video_id}
 
 
 @dataclass
@@ -134,22 +136,24 @@ class Client:
         self.quota += used_quota
 
     def search_wflow(self):
-        running = True
 
-        while running:
-            self.search_query()
-            self.channel_query()
+        try:
+            while self.quota <= self.limit_quota:
+                self.playlistitems_query()
+                self.video_query()
+                self.search_query()
+                self.channel_query()
 
-            running = self.quota < self.limit_quota
+                print(f'{Fore.MAGENTA}***** Waiting for 2 seconds')
+                sleep(2)
+                print(f'{Fore.GREEN}Time is up *****{Fore.RESET}')
 
-    def channels_wflow(self):
-        print('Channel workflow')
+        except Exception as e:
+            print(e)
 
-    def playlistitems_wflow(self):
-        print('Playlistitems_wflow workflow')
-
-    def videos_wflow(self):
-        print('Videos workflow')
+        finally:
+            print(self.quota)
+            # running = self.quota < self.limit_quota
 
     def search_query(self):
 
@@ -162,6 +166,8 @@ class Client:
             self.cal_quota()
             search_data.saveData()
             print('quota', self.quota)
+
+        print(f'>>>>>>>>>>>> {Fore.GREEN}Fetched all search items of this page{Fore.RESET}')
 
     def channel_query(self):
 
@@ -181,22 +187,47 @@ class Client:
                 new_channel = session.query(Search).filter_by(status = 'N').first()
 
             else:
-                print('Something with saving the new channel')
+                print(f'{Fore.RED}Something with saving the new channel{Fore.RESET}')
+
+        print(f'>>>>>>>>>>>> {Fore.GREEN}Fetched all Channels{Fore.RESET}')
 
     def playlistitems_query(self):
         new_upload = session.query(Channel).filter_by(status = 'N').first()
-        print(new_upload.uploads)
 
-        # while new_upload:
-        pli_api = PlaylistItemsAPI(self.api_key, new_upload.uploads)
-        pli_data = pli_api.consume()
-        self.cal_quota(pli_data)
+        while new_upload:
 
-        for pli in pli_data:
-            pli.saveData()
+            pli_api = PlaylistItemsAPI(self.api_key, new_upload.uploads)
+            pli_data = pli_api.consume()
+            self.cal_quota(*pli_data)
 
-        new_upload.status = 'Y'
-        session.commit()
+            for pli in pli_data:
+                pli.saveData()
+
+            new_upload.status = 'Y'
+            session.commit()
+
+            new_upload = session.query(Channel).filter_by(status = 'N').first()
+
+        print(f'>>>>>>>>>>>> {Fore.GREEN}Fetched all playlist items{Fore.RESET}')
+
+    def video_query(self):
+
+        new_video = session.query(PlaylistItems).filter_by(status = 'N').first()
+
+        while new_video:
+            video_api = VideoAPI(self.api_key, new_video.videoId)
+            video_data = video_api.fetch()
+            self.cal_quota(video_data)
+
+            saved = video_data.saveData()
+
+            if saved:
+                new_video.status = 'Y'
+                session.commit()
+
+            new_video = session.query(PlaylistItems).filter_by(status = 'N').first()
+
+        print(f'>>>>>>>>>>>> {Fore.GREEN}Fetched all videos{Fore.RESET}')
 
 
 

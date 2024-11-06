@@ -25,8 +25,7 @@ def main():
         2: api_client.search_query,
         3: api_client.channel_query,
         4: api_client.playlistitems_query,
-        5: api_client.search_query,
-        6: api_client.channel_query,
+        5: api_client.video_query
     }
 
     ui = {
@@ -34,8 +33,7 @@ def main():
         '2': 'Search Only',
         '3': 'Query Channel Details only',
         '4': 'Query Playlist items only',
-        '5': 'Search Only',
-        '6': 'Query Channel Details only'
+        '5': 'Query Video only',
     }
 
     choice = ''

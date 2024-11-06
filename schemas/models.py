@@ -1,7 +1,7 @@
 from typing import List
 from typing import Optional
 from sqlalchemy import ForeignKey
-from sqlalchemy import String, DateTime, Integer
+from sqlalchemy import String, DateTime, Integer, Float
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -59,6 +59,33 @@ class Video(Base):
     __tablename__ = 'video'
 
     id: Mapped[str] = mapped_column(String(50), primary_key = True)
+    channelId: Mapped[str] = mapped_column(String(50))
+    title: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(String(255))
+    thumbnail: Mapped[str] = mapped_column(String(255))
+    publishedAt: Mapped[datetime]  = mapped_column(DateTime)
+    categoryId: Mapped[int] = mapped_column(Integer)
+    defaultLanguage: Mapped[str] = mapped_column(String(5))
+    duration: Mapped[float] = mapped_column(Float)
+    viewCount: Mapped[int] = mapped_column(Integer)
+    likeCount: Mapped[int] = mapped_column(Integer)
+    commentCount: Mapped[int] = mapped_column(Integer)
+    load_dt: Mapped[datetime] = mapped_column(DateTime, default = datetime.now)
+
+class VideoTags(Base):
+    __tablename__ = 'video_tags'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key = True, autoincrement = True)
+    video_id: Mapped[str] = mapped_column(String(50))
+    tag: Mapped[str] = mapped_column(String(30))
+
+
+class VideoDetail(Base):
+    __tablename__ = 'video_detail'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key = True, autoincrement = True)
+    video_id: Mapped[str] = mapped_column(String(50))
+    detail_category: Mapped[str] = mapped_column(String(100))
 
 
 Base.metadata.create_all(bind = engine)

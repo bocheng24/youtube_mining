@@ -11,3 +11,4 @@ scikit-learn
 tqdm
 sqlalchemy
 colorama
+isodate
