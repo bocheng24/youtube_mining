@@ -157,3 +157,6 @@ cython_debug/
 data/*
 
 *.db
+
+params_bk/
+paramsConfigs/*/*.json

@@ -25,7 +25,7 @@ def main():
         2: api_client.search_query,
         3: api_client.channel_query,
         4: api_client.playlistitems_query,
-        5: api_client.video_query
+        5: api_client.video_query,
     }
 
     ui = {

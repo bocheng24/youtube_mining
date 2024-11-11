@@ -214,7 +214,7 @@ class Client:
 
         new_video = session.query(PlaylistItems).filter_by(status = 'N').first()
 
-        while new_video:
+        while new_video and self.quota <= self.limit_quota:
             video_api = VideoAPI(self.api_key, new_video.videoId)
             video_data = video_api.fetch()
             self.cal_quota(video_data)
