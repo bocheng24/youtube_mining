@@ -160,3 +160,8 @@ data/*
 
 params_bk/
 paramsConfigs/*/*.json
+
+*.csv
+*out*.txt
+
+*copy*
